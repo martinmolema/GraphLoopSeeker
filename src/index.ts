@@ -299,7 +299,11 @@ function showLoops(loops: Map<string, NodePath>): void {
 function setupEventhandlers(): void {
     const loops = document.getElementById("loops-found");
     loops?.addEventListener('click', (event: PointerEvent) => {
+
+        loops?.querySelectorAll('li').forEach(el => el.classList.remove('selected'))
+
         const element = event.target as HTMLLIElement;
+        element.classList.add('selected');
         const dataID = element.dataset.id || '';
         const path = allLoopsFound.get(dataID);
 

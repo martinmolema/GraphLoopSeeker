@@ -20,6 +20,12 @@ section.graph-and-list {
         
         & ol li {
             cursor: pointer;
+
+            &.selected {
+                background-color: gray;
+                color: white;
+                font-weight: bold;
+            }
         }
 
     }
