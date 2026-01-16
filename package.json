@@ -4,11 +4,16 @@
   "description": "Graph Loop seeker using Cytoscape for visualisation",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "npx tsc -w"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "cytoscape": "^3.33.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1"
   }
 }

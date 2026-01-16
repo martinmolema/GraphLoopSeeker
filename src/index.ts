@@ -3,12 +3,21 @@
  *
  * literature: https://www.cs.tufts.edu/comp/150GA/homeworks/hw1/Johnson%2075.PDF
  */
-import cytoscape from '../node_modules/cytoscape/dist/cytoscape.esm.mjs';
+import cytoscape, {
+    EdgeDefinition,
+    NodeDefinition,
+    NodeSingular,
+} from 'cytoscape';
 
-/** cytoscape.Core */
-var cy;
+var cy!: cytoscape.Core;
 
-var set1 = {
+type NodePath = Set<NodeSingular>;
+
+type SetComponentNodeType = { label: string, id: string }
+type SetComponentEdgeType = { source: string, target: string, id: string }
+type SetOfNodesAndEdges = { nodes: Array<SetComponentNodeType>, edges: Array<SetComponentEdgeType> }
+
+var set1: SetOfNodesAndEdges = {
 
     nodes: [
         {label: 'A', id: 'node-a'},
@@ -39,32 +48,40 @@ var set1 = {
         {source: 'node-q', target: 'node-e', id: 'q-e'},
     ]
 }
-var set2 = {
-    nodes:[
-        {label:'A', id: 'node-a'},
-        {label:'B', id: 'node-b'},
-        {label:'C', id: 'node-c'} ,
+var set2: SetOfNodesAndEdges = {
+    nodes: [
+        {label: 'A', id: 'node-a'},
+        {label: 'B', id: 'node-b'},
+        {label: 'C', id: 'node-c'},
     ],
-    edges:[
-        { source: 'node-a', target: 'node-b', id: 'a-b'},
-        { source: 'node-a', target: 'node-c', id: 'a-c'},
-        { source: 'node-b', target: 'node-a', id: 'b-a'},
-        { source: 'node-b', target: 'node-c', id: 'b-c'},
-        { source: 'node-c', target: 'node-b', id: 'c-b'},
+    edges: [
+        {source: 'node-a', target: 'node-b', id: 'a-b'},
+        {source: 'node-a', target: 'node-c', id: 'a-c'},
+        {source: 'node-b', target: 'node-a', id: 'b-a'},
+        {source: 'node-b', target: 'node-c', id: 'b-c'},
+        {source: 'node-c', target: 'node-b', id: 'c-b'},
     ],
 };
 
-const stats = {
-    nrOfNodes : 0,
-    nrOfEdges : 0,
-    longestPath : 0,
-    maxLevelOfRecursion : 0,
+type Statistics = {
+    nrOfNodes: number;
+    nrOfEdges: number;
+    longestPath: number;
+    maxLevelOfRecursion: number;
+    nrOfSearchIterations: number;
+}
+const stats: Statistics = {
+    nrOfNodes: 0,
+    nrOfEdges: 0,
+    longestPath: 0,
+    maxLevelOfRecursion: 0,
+    nrOfSearchIterations: 0,
 }
 
 /** HTMLDivElement */
 var elCytoscape;
 
-function setup(set) {
+function setup(set: SetOfNodesAndEdges): void {
     elCytoscape = document.getElementById("cytoscape");
 
     cy = cytoscape({
@@ -82,7 +99,7 @@ function setup(set) {
  * @param set {{nodes, edges}}
  * @returns { NodeSingular[]}
  */
-function createNodes(set) {
+function createNodes(set: SetOfNodesAndEdges): NodeDefinition[] {
     return set.nodes.map(n => {
         return {
             data: {
@@ -97,7 +114,7 @@ function createNodes(set) {
  * @param set {{nodes, edges}}
  * @returns { EdgeSingular[]}
  */
-function createEdges(set) {
+function createEdges(set:SetOfNodesAndEdges): EdgeDefinition[] {
     return set.edges.map(n => {
         return {
             data: {
@@ -138,52 +155,86 @@ function setStyling() {
 var nodesVisitedWithAllOutgoersVisited = new Set();
 
 function findLoops() {
-   const nodes = cy.nodes();
-   const currentPath = new Set();
+    const nodes = cy.nodes();
+    const currentPath = new Set<NodeSingular>();
+    const existingPaths = new Set<NodePath>();
 
-   try {
-       nodes.forEach(n => {
-           recursiveFindLoops(n, currentPath, 0);
-       });
-   }
-   catch(e) {
-       alert(e.message);
-   }
-}
-
-function recursiveFindLoops(node, currentPath, level) {
-    stats.maxLevelOfRecursion = Math.max(stats.maxLevelOfRecursion, level);
-    stats.longestPath = Math.max(stats.longestPath, currentPath.size);
-
-    if (currentPath.has(node)) {
-        console.log('This is a loop');
-        [...currentPath.nodes].forEach(node => {
-            console.log(`- ${node.data('label')}`);
-        })
-        return ;
-    }
-
-
-    const outgoers = node.outgoers('node');
-    outgoers.forEach(n => {
-       recursiveFindLoops(n, currentPath, level + 1);
+    nodes.forEach(n => {
+        console.group(`Start investigating ${n.id()}`);
+        recursiveFindLoops(n, currentPath, existingPaths, 0);
+        console.groupEnd();
     });
 }
 
+/**
+ *
+ * @param node
+ * @param currentPath
+ * @param existingPaths
+ * @param level
+ */
+function recursiveFindLoops(node: NodeSingular, currentPath: NodePath, existingPaths: Set<NodePath>, level: number) {
+    stats.maxLevelOfRecursion = Math.max(stats.maxLevelOfRecursion, level);
+    stats.longestPath = Math.max(stats.longestPath, currentPath.size);
+    stats.nrOfSearchIterations++;
+
+    const indent = ''.padStart(level * 2, ' ');
+
+    console.log(`${indent} - (${level}) : ${node.data('label')}`);
+
+    if (currentPath.has(node)) {
+        addLoop(node, currentPath, existingPaths);
+        return;
+    }
+
+    currentPath.add(node);
+
+    const outgoers = node.outgoers('node');
+    outgoers.forEach(n => {
+        recursiveFindLoops(n, currentPath, existingPaths, level + 1);
+        currentPath.delete(n);
+    });
+}
+
+/**
+ * @param startNode {NodeSingular}
+ * @param newPath {Set<NodeSingular>}
+ * @param existingPaths {Set<Set<NodeSingular>>}
+ */
+function addLoop(startNode: NodeSingular, newPath: NodePath, existingPaths: Set<NodePath>) {
+    const pathStr = [...newPath].map(n => n.data('label')).join('-');
+    console.log(` # LOOP: ${pathStr}`);
+
+    const pathCopy = new Set<NodeSingular>(...newPath);
+
+    let head: NodeSingular | undefined;
+    do {
+        [head] = pathCopy;
+        if (head && head !== startNode) {
+            pathCopy.delete(head);
+        }
+    } while ((pathCopy.size > 0) && head !== startNode)
+
+    existingPaths.add(pathCopy);
+}
+
+/**
+ * Updates the values in the HTML-file from the stats global var
+ */
 function updateStats() {
     const items = document.querySelectorAll('table tr td:nth-child(2)');
     items.forEach(item => {
         const textContent = item.textContent;
-        const newTextContent = textContent.replace(/\$([a-zA-Z_0-9]+)/g, (match, p1, offset, string, groups) => {
-            return stats[p1];
+        item.textContent = textContent.replace(/\$([a-zA-Z_0-9]+)/g, (match: string, p1: string, offset: number, fullstring: string, groups: any[]): string => {
+            const statKey = p1 as keyof Statistics;
+            return String(stats[statKey]);
         });
-        item.textContent = newTextContent;
     })
 }
 
 /******************************************************************************************************
-**************************** MAIN *********************************************************************
-*******************************************************************************************************
+ **************************** MAIN *********************************************************************
+ *******************************************************************************************************
  */
 
 
