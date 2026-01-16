@@ -1,0 +1,8 @@
+#cytoscape {
+    width:calc(80vw - 30px);
+    height:calc(80vh - 30px);
+    margin:auto;
+    background-color:whitesmoke;
+    border:1px solid black
+
+}

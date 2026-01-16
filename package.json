@@ -1,0 +1,14 @@
+{
+  "name": "graph-loop-seeker",
+  "version": "1.0.0",
+  "description": "Graph Loop seeker using Cytoscape for visualisation",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cytoscape": "^3.33.1"
+  }
+}
