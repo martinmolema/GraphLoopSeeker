@@ -1,8 +1,26 @@
 #cytoscape {
     width:calc(80vw - 30px);
-    height:calc(80vh - 30px);
-    margin:auto;
+    height:calc(80vh - 100px);
     background-color:whitesmoke;
     border:1px solid black
 
+}
+
+section.graph-and-list {
+    display: flex;
+    flex-direction: row;
+
+    & div#loops-found {
+        border:1px solid darkgray;;
+        border-radius: 4px;
+        background-color: aliceblue;
+        width:auto;
+        flex-grow:1;
+        margin-left:10px;
+        
+        & ol li {
+            cursor: pointer;
+        }
+
+    }
 }

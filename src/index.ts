@@ -12,6 +12,7 @@ import cytoscape, {
 var cy!: cytoscape.Core;
 
 type NodePath = Set<NodeSingular>;
+var allLoopsFound: Map<string, NodePath>;
 
 type SetComponentNodeType = { label: string, id: string }
 type SetComponentEdgeType = { source: string, target: string, id: string }
@@ -69,13 +70,16 @@ type Statistics = {
     longestPath: number;
     maxLevelOfRecursion: number;
     nrOfSearchIterations: number;
+    nrOfLoopsFound: number;
 }
+
 const stats: Statistics = {
     nrOfNodes: 0,
     nrOfEdges: 0,
     longestPath: 0,
     maxLevelOfRecursion: 0,
     nrOfSearchIterations: 0,
+    nrOfLoopsFound: 0
 }
 
 /** HTMLDivElement */
@@ -83,6 +87,9 @@ var elCytoscape;
 
 function setup(set: SetOfNodesAndEdges): void {
     elCytoscape = document.getElementById("cytoscape");
+
+    stats.nrOfEdges = set.edges.length;
+    stats.nrOfNodes = set.nodes.length
 
     cy = cytoscape({
         container: elCytoscape,
@@ -114,7 +121,7 @@ function createNodes(set: SetOfNodesAndEdges): NodeDefinition[] {
  * @param set {{nodes, edges}}
  * @returns { EdgeSingular[]}
  */
-function createEdges(set:SetOfNodesAndEdges): EdgeDefinition[] {
+function createEdges(set: SetOfNodesAndEdges): EdgeDefinition[] {
     return set.edges.map(n => {
         return {
             data: {
@@ -148,6 +155,10 @@ function setStyling() {
             'target-text-offset': 20,
             'source-text-offset': 20,
         })
+        .selector('node.on-a-path')
+        .style({
+            "background-color":"red"
+        })
         .update();
 
 }
@@ -157,13 +168,20 @@ var nodesVisitedWithAllOutgoersVisited = new Set();
 function findLoops() {
     const nodes = cy.nodes();
     const currentPath = new Set<NodeSingular>();
-    const existingPaths = new Set<NodePath>();
+    allLoopsFound = new Map<string, NodePath>();
 
-    nodes.forEach(n => {
-        console.group(`Start investigating ${n.id()}`);
-        recursiveFindLoops(n, currentPath, existingPaths, 0);
-        console.groupEnd();
-    });
+    try {
+        nodes.forEach(n => {
+            console.group(`Start investigating ${n.id()}`);
+            recursiveFindLoops(n, currentPath, allLoopsFound, 0);
+            console.groupEnd();
+        });
+    } catch (e) {
+        console.log(e);
+    }
+
+    stats.nrOfLoopsFound = allLoopsFound.size;
+    showLoops(allLoopsFound);
 }
 
 /**
@@ -173,7 +191,7 @@ function findLoops() {
  * @param existingPaths
  * @param level
  */
-function recursiveFindLoops(node: NodeSingular, currentPath: NodePath, existingPaths: Set<NodePath>, level: number) {
+function recursiveFindLoops(node: NodeSingular, currentPath: NodePath, existingPaths: Map<string, NodePath>, level: number) {
     stats.maxLevelOfRecursion = Math.max(stats.maxLevelOfRecursion, level);
     stats.longestPath = Math.max(stats.longestPath, currentPath.size);
     stats.nrOfSearchIterations++;
@@ -186,14 +204,15 @@ function recursiveFindLoops(node: NodeSingular, currentPath: NodePath, existingP
         addLoop(node, currentPath, existingPaths);
         return;
     }
-
     currentPath.add(node);
 
     const outgoers = node.outgoers('node');
     outgoers.forEach(n => {
         recursiveFindLoops(n, currentPath, existingPaths, level + 1);
-        currentPath.delete(n);
+
     });
+
+    currentPath.delete(node);
 }
 
 /**
@@ -201,12 +220,8 @@ function recursiveFindLoops(node: NodeSingular, currentPath: NodePath, existingP
  * @param newPath {Set<NodeSingular>}
  * @param existingPaths {Set<Set<NodeSingular>>}
  */
-function addLoop(startNode: NodeSingular, newPath: NodePath, existingPaths: Set<NodePath>) {
-    const pathStr = [...newPath].map(n => n.data('label')).join('-');
-    console.log(` # LOOP: ${pathStr}`);
-
-    const pathCopy = new Set<NodeSingular>(...newPath);
-
+function addLoop(startNode: NodeSingular, newPath: NodePath, existingPaths: Map<string, NodePath>) {
+    const pathCopy = new Set<NodeSingular>(newPath);
     let head: NodeSingular | undefined;
     do {
         [head] = pathCopy;
@@ -215,7 +230,31 @@ function addLoop(startNode: NodeSingular, newPath: NodePath, existingPaths: Set<
         }
     } while ((pathCopy.size > 0) && head !== startNode)
 
-    existingPaths.add(pathCopy);
+    const pathStr2 = [...pathCopy].map(n => n.data('label')).join('-');
+    console.log(` # LOOP (shortened): ${pathStr2}`);
+
+    const pathAsArray: NodeSingular[] = [...pathCopy];
+    const allRotations: Array<Array<NodeSingular>> = pathAsArray.map<NodeSingular[]>(
+        (_: NodeSingular, index: number, list: NodeSingular[]) =>
+            [...list.slice(index), ...list.slice(0, index)]
+    );
+
+    allRotations.sort(
+        (a: Array<NodeSingular>, b: Array<NodeSingular>) =>
+            a.map(n => n.id()).join('|')
+                .localeCompare(
+                    b.map(n => n.id()).join('|')
+                )
+    );
+
+    const newLexicographicalShortestPath = new Set<NodeSingular>(allRotations[0]);
+    const keyOfNewPath = [...newLexicographicalShortestPath].map(n => n.id()).join('|');
+
+    if (existingPaths.has(keyOfNewPath)) {
+        return
+    }
+
+    existingPaths.set(keyOfNewPath, newLexicographicalShortestPath);
 }
 
 /**
@@ -225,11 +264,49 @@ function updateStats() {
     const items = document.querySelectorAll('table tr td:nth-child(2)');
     items.forEach(item => {
         const textContent = item.textContent;
-        item.textContent = textContent.replace(/\$([a-zA-Z_0-9]+)/g, (match: string, p1: string, offset: number, fullstring: string, groups: any[]): string => {
+        item.textContent = textContent.replace(/\$([a-zA-Z_0-9]+)/g, (match: string, p1: string): string => {
             const statKey = p1 as keyof Statistics;
             return String(stats[statKey]);
         });
-    })
+    });
+}
+
+/**
+ *
+ * @param loops
+ */
+function showLoops(loops: Map<string, NodePath>): void {
+    const container = document.getElementById("loops-found");
+    if (!container) {
+        return
+    }
+
+    const olElement: HTMLOListElement = document.createElement('ol');
+    for (let key of loops.keys()) {
+        const nodes = loops.get(key);
+        if (nodes) {
+            const listItem: HTMLLIElement = document.createElement('li');
+            if (listItem) {
+                olElement.appendChild(listItem);
+                listItem.dataset.id = key;
+                listItem.textContent = [...nodes].map(n => n.data('label')).join(' - ');
+            }
+        }
+    }
+    container.appendChild(olElement)
+}
+
+function setupEventhandlers(): void {
+    const loops = document.getElementById("loops-found");
+    loops?.addEventListener('click', (event: PointerEvent) => {
+        const element = event.target as HTMLLIElement;
+        const dataID = element.dataset.id || '';
+        const path = allLoopsFound.get(dataID);
+
+        cy.nodes().removeClass("on-a-path");
+        path?.forEach(n => n.addClass('on-a-path'));
+
+    });
 }
 
 /******************************************************************************************************
@@ -240,6 +317,7 @@ function updateStats() {
 
 window.onload = () => {
     setup(set1);
+    setupEventhandlers();
     findLoops();
     updateStats();
 }
