@@ -49,8 +49,11 @@ export class LoopFinderBase<T extends Statistics> {
      * Actually start looking for the loops; this should by overridden by other algo's.
      */
     run(): SetOfLoops {
+        this.stats.startTimer();
+        this.stats.stopTimer();
         return this.allLoops;
     }
+
 
     /**
      * Add a loop to the set. The loop is lexicographically order by its ID's for easier comparison and making sure
@@ -112,5 +115,10 @@ export class LoopFinderBase<T extends Statistics> {
     private createUniqueIdFromNodeIDs(list: Array<NodeSingular>): string {
         return list.map(n => n.id()).join('|');
     }
-}
 
+    protected isNodeMemberOfAnExistingPath(node: NodeSingular): boolean {
+        return [...this.allLoops].some(([key, path]) => {
+            [...path].some(n => n.id() === node.id())
+        });
+    }
+}

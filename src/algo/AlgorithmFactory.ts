@@ -8,8 +8,7 @@ export class AlgorithmFactory {
         switch(type) {
             case "naive":
                 const stats= new StatisticsNaive(cy);
-                const algo = new LoopFinderNaive(cy, stats);
-                return algo;
+                return new LoopFinderNaive(cy, stats);
             default:
                 return undefined;
         }

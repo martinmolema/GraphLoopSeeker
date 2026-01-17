@@ -17,6 +17,7 @@ export class LoopFinderNaive extends LoopFinderBase<StatisticsNaive> {
 
     constructor(cy: cytoscape.Core, stats: StatisticsNaive) {
         super(cy, stats);
+        this.stats.update();
     }
 
     /**
@@ -26,17 +27,16 @@ export class LoopFinderNaive extends LoopFinderBase<StatisticsNaive> {
         const currentPath = new Set<NodeSingular>();
         const allLoopsFound = new Map<string, NodePath>();
 
-        this.stats.update();
-
+        this.stats.startTimer();
         try {
             this.nodesAsCollection?.forEach(n => {
-                console.group(`Start investigating ${n.id()}`);
                 this.recursiveFindLoops(n, currentPath, allLoopsFound, 0);
-                console.groupEnd();
             });
         } catch (e) {
             console.log(e);
         }
+        this.stats.stopTimer();
+        this.stats.nrOfLoopsFound = this.allLoops.size;
         return this.allLoops;
     }
 
@@ -51,10 +51,6 @@ export class LoopFinderNaive extends LoopFinderBase<StatisticsNaive> {
         this.stats.maxLevelOfRecursion = Math.max(this.stats.maxLevelOfRecursion, level);
         this.stats.longestPath = Math.max(this.stats.longestPath, currentPath.size);
         this.stats.nrOfSearchIterations++;
-
-        const indent = ''.padStart(level * 2, ' ');
-
-        console.log(`${indent} - (${level}) : ${node.data('label')}`);
 
         if (currentPath.has(node)) {
             this.addLoop(node, currentPath);
