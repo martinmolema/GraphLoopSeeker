@@ -25,15 +25,9 @@ export const set2: SetOfNodesAndEdges = {
     ],
 };
 
+const nrOfRepeatingNodesForTarjanWorstCase = 20;
 /** Tarjan worst case */
 export const set3 = createNodesAndEdges([
-    'A-B1-C',
-    'A-B2-C',
-    'A-B3-C',
-    'A-B4-C',
-    'A-B5-C',
-    'A-B6-C',
-
     'E-A',
     'E-F',
     'H-C',
@@ -41,25 +35,9 @@ export const set3 = createNodesAndEdges([
     'G-F',
     'F-H-G',
 
-    'C-D1-E',
-    'C-D2-E',
-    'C-D3-E',
-    'C-D4-E',
-    'C-D5-E',
-    'C-D6-E',
-    'C-D7-E',
-
-    'F-I1-G',
-    'F-I2-G',
-    'F-I3-G',
-    'F-I4-G',
-    'F-I5-G',
-    'F-I6-G',
-    'F-I7-G',
-    'F-I8-G',
-    'F-I9-G',
-
-
+    ...Array.from({length: nrOfRepeatingNodesForTarjanWorstCase}, (_,i) => `A-B${i}-C`),
+    ...Array.from({length: nrOfRepeatingNodesForTarjanWorstCase}, (_,i) => `C-D${i}-E`),
+    ...Array.from({length: nrOfRepeatingNodesForTarjanWorstCase}, (_,i) => `F-I${i}-G`),
 ]);
 
 function createNodesAndEdges(paths: string[]): SetOfNodesAndEdges {

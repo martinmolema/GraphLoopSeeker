@@ -35,8 +35,8 @@ function setup(set: SetOfNodesAndEdges): void {
     cy.layout({
         name: 'elk',
         elk: {
-            algorithm:'layered',
-            'elk.direction': 'RIGHT'
+            algorithm:'mrtree',
+            'elk.direction': 'DOWN'
         }
     } as any).run();
 }

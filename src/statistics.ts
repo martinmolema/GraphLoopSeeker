@@ -1,4 +1,4 @@
-import cytoscape from "cytoscape";
+import cytoscape, {NodeSingular} from "cytoscape";
 
 export class Statistics  {
     nrOfNodes: number;
@@ -10,6 +10,14 @@ export class Statistics  {
     startTime: number;
     stopTime: number;
     timeDifference: number;
+    timeDifferenceStr:string;
+    minDegree: number = 0;
+    maxDegree: number = 0;
+    minInDegree: number = 0;
+    maxInDegree: number = 0;
+    minOutDegree: number = 0;
+    maxOutDegree: number = 0;
+
 
     constructor(cy: cytoscape.Core) {
         this.nrOfNodes = 0;
@@ -22,11 +30,20 @@ export class Statistics  {
         this.startTime = 0;
         this.stopTime = 0;
         this.timeDifference = 0;
+        this.timeDifferenceStr = '';
     }
 
     update(): void {
         this.nrOfEdges = this.cy.nodes().length;
         this.nrOfNodes = this.cy.edges().length;
+
+        this.maxDegree = this.cy.nodes().maxDegree();
+        this.minDegree = this.cy.nodes().minDegree();
+
+        this.minInDegree = this.cy.nodes().minIndegree();
+        this.maxInDegree = this.cy.nodes().maxIndegree();
+        this.minOutDegree = this.cy.nodes().minOutdegree();
+        this.maxOutDegree = this.cy.nodes().maxOutdegree();
     }
 
     public startTimer(): void {
@@ -36,6 +53,7 @@ export class Statistics  {
     public stopTimer(): void {
         this.stopTime = this.timer.now();
         this.timeDifference = this.timerLength;
+        this.timeDifferenceStr = this.timerLengthFormatted;
     }
 
     /**
@@ -43,6 +61,10 @@ export class Statistics  {
      */
     public get timerLength(): number {
         return this.stopTime - this.startTime;
+    }
+
+    public get timerLengthFormatted(): string {
+        return this.timerLength.toLocaleString();
     }
 
 }

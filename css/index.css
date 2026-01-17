@@ -1,26 +1,40 @@
+body {
+    font-family: sans-serif;
+}
+
 #graph {
-    width:calc(80vw - 30px);
-    height:calc(80vh - 100px);
-    background-color:whitesmoke;
-    border:1px solid black
+    width: calc(100vw - 500px);
+    height: calc(100vh - 100px);
+    background-color: whitesmoke;
+    border: 1px solid black
 
 }
 
 section.graph-and-list {
     display: flex;
     flex-direction: row;
-    height: calc(80vh - 100px);
+    height: calc(100vh - 100px);
+
+    & div.stats {
+        border:1px solid darkgray;
+        margin-left:5px;
+        padding:5px;
+
+        & table tr td {
+            white-space: nowrap;
+        }
+    }
 
     & div#loops-found {
-        border:1px solid darkgray;;
+        border: 1px solid darkgray;;
         border-radius: 4px;
         background-color: aliceblue;
-        width:auto;
+        width: auto;
         height: 100%;
-        overflow-y:auto;
-        flex-grow:1;
-        margin-left:10px;
-        
+        overflow-y: auto;
+        flex-grow: 1;
+        margin-left: 10px;
+
         & ol li {
             cursor: pointer;
 
@@ -30,6 +44,5 @@ section.graph-and-list {
                 font-weight: bold;
             }
         }
-
     }
 }
