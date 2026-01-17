@@ -1,4 +1,4 @@
-#cytoscape {
+#graph {
     width:calc(80vw - 30px);
     height:calc(80vh - 100px);
     background-color:whitesmoke;
@@ -9,12 +9,15 @@
 section.graph-and-list {
     display: flex;
     flex-direction: row;
+    height: calc(80vh - 100px);
 
     & div#loops-found {
         border:1px solid darkgray;;
         border-radius: 4px;
         background-color: aliceblue;
         width:auto;
+        height: 100%;
+        overflow-y:auto;
         flex-grow:1;
         margin-left:10px;
         
