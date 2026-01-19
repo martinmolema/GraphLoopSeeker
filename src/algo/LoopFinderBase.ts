@@ -1,5 +1,5 @@
 import cytoscape, {Collection, EdgeSingular, NodeSingular} from "cytoscape";
-import {Statistics} from "../statistics";
+import {Statistics} from "../stats/statistics";
 
 export type NodePath = Set<NodeSingular>;
 export type SetOfLoops = Map<string, NodePath>;
@@ -13,9 +13,14 @@ export class LoopFinderBase<T extends Statistics> {
     protected nodeSet: Set<NodeSingular>;
     protected edgeSet: Set<EdgeSingular>;
 
+    /** a Map of loops; each loop is identified by a lexicographically id consisting of all joined ID's of the nodes in the Set */
     public allLoops: SetOfLoops;
 
+    /** a reverse lookup: the key is the ID of a node, and the NodePath value is a lexicographically shortest path */
+    protected reverseLookupPaths: Map<string, SetOfLoops>;
+
     public stats: T;
+
 
     /**
      * Creates a new instance; will gather a list of edges and nodes, and convert them in a Set and Cytoscape collections
@@ -42,18 +47,36 @@ export class LoopFinderBase<T extends Statistics> {
         });
 
         this.allLoops = new Map<string, NodePath>();
+        this.reverseLookupPaths = new Map<string, SetOfLoops>();
+        this.stats.algoName = this.algo;
+    }
 
+    get algo(): string {
+        return '';
     }
 
     /**
      * Actually start looking for the loops; this should by overridden by other algo's.
+     * @returns A set of loops or undefined in case of an exception.
      */
-    run(): SetOfLoops {
+    public run(): SetOfLoops | undefined {
         this.stats.startTimer();
-        this.stats.stopTimer();
-        return this.allLoops;
+        try {
+            const result = this.findAllLoops();
+            this.stats.stopTimer();
+
+            this.stats.nrOfLoopsFound = this.allLoops.size;
+            return result;
+        } catch (e) {
+            console.warn(e);
+            return undefined
+        }
     }
 
+
+    protected findAllLoops(): SetOfLoops {
+        return this.allLoops;
+    }
 
     /**
      * Add a loop to the set. The loop is lexicographically order by its ID's for easier comparison and making sure
@@ -63,7 +86,7 @@ export class LoopFinderBase<T extends Statistics> {
      * @returns TRUE if a path/loop set was added, or FALSE if the path/loop already exists
      * @private
      */
-    addLoop(startNode: NodeSingular, newPath: NodePath): boolean {
+    protected addLoop(startNode: NodeSingular, newPath: NodePath): boolean {
         const pathCopy = new Set<NodeSingular>(newPath);
         let head: NodeSingular | undefined;
         do {
@@ -102,6 +125,25 @@ export class LoopFinderBase<T extends Statistics> {
         // now create a new set and copy the path in the set.
         const newLexicographicalShortestPath = new Set<NodeSingular>(lexicographicallyFirstItem);
 
+        // add the path to the reverse lookup table.
+        [...newLexicographicalShortestPath].forEach(n => {
+            const id = n.id();
+            // make a new path where the given node is the first of the path
+            const pathWithNodeAsFirstPart = this.rotatePathSoNodeIsFirst(n, newLexicographicalShortestPath);
+
+            // get current set of paths or create a new one.
+            let paths = this.reverseLookupPaths.get(n.id());
+            if (!paths) {
+                paths = new Map<string, NodePath>();
+                this.reverseLookupPaths.set(id, paths);
+            }
+            if (pathWithNodeAsFirstPart) {
+                paths.set(keyOfNewPath, pathWithNodeAsFirstPart);
+            }
+
+
+        });
+
         // add the new set to the Map of existing paths
         this.allLoops.set(keyOfNewPath, newLexicographicalShortestPath);
         return true;
@@ -116,9 +158,38 @@ export class LoopFinderBase<T extends Statistics> {
         return list.map(n => n.id()).join('|');
     }
 
+    /**
+     * Returns TRUE if a node is already in one of the found paths.
+     * @param node
+     * @protected
+     */
     protected isNodeMemberOfAnExistingPath(node: NodeSingular): boolean {
-        return [...this.allLoops].some(([key, path]) => {
-            [...path].some(n => n.id() === node.id())
-        });
+        return this.reverseLookupPaths.has(node.id());
+    }
+
+    /**
+     * Returns all paths the given node is part of.
+     * @param node
+     * @returns undefined if node cannot be found in the list of current paths.
+     * @protected
+     */
+    protected findNodeInExistingPath(node: NodeSingular): Map<string, NodePath> | undefined {
+        return this.reverseLookupPaths.get(node.id());
+    }
+
+    protected rotatePathSoNodeIsFirst(node: NodeSingular, path: NodePath): NodePath | undefined {
+        const arr = [...path];
+        const id = node.id();
+        const p = arr.findIndex(n => n.id() === id);
+        if (p !== -1) {
+            const newArr = [...arr.slice(p), ...arr.slice(0, p)];
+
+            return new Set<cytoscape.NodeSingular>(newArr);
+        }
+        return undefined;
+    }
+
+    protected debugOutputPathToConsole(path: NodePath): void {
+        console.log([...path].map(n => n.id()).join('-'));
     }
 }

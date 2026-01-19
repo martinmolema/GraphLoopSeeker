@@ -1,53 +1,29 @@
 import {LoopFinderBase, NodePath, SetOfLoops} from "./LoopFinderBase";
-import cytoscape, {NodeSingular} from "cytoscape";
-import {Statistics} from "../statistics";
-
-export class StatisticsNaive extends Statistics {
-    maxLevelOfRecursion: number;
-    nrOfSearchIterations: number;
-
-    constructor(cy: cytoscape.Core) {
-        super(cy);
-        this.maxLevelOfRecursion = 0;
-        this.nrOfSearchIterations = 0;
-    }
-}
+import {NodeSingular} from "cytoscape";
+import {StatisticsNaive} from "../stats/StatisticsNaive";
 
 export class LoopFinderNaive extends LoopFinderBase<StatisticsNaive> {
 
-    constructor(cy: cytoscape.Core, stats: StatisticsNaive) {
-        super(cy, stats);
-        this.stats.update();
-    }
-
-    /**
-     * Brute force find all loops.
-     */
-    override run(): SetOfLoops {
+    override findAllLoops(): SetOfLoops {
         const currentPath = new Set<NodeSingular>();
-        const allLoopsFound = new Map<string, NodePath>();
-
-        this.stats.startTimer();
-        try {
-            this.nodesAsCollection?.forEach(n => {
-                this.recursiveFindLoops(n, currentPath, allLoopsFound, 0);
-            });
-        } catch (e) {
-            console.log(e);
-        }
-        this.stats.stopTimer();
-        this.stats.nrOfLoopsFound = this.allLoops.size;
+        this.nodesAsCollection?.forEach(n => {
+            this.recursiveFindLoops(n, currentPath, 0);
+        });
         return this.allLoops;
     }
 
+    override get algo():string {
+        return 'naive';
+    }
+
+
     /**
-     *
+     * Brute force travel all paths
      * @param node
      * @param currentPath
-     * @param existingPaths
      * @param level
      */
-    recursiveFindLoops(node: NodeSingular, currentPath: NodePath, existingPaths: Map<string, NodePath>, level: number) {
+    recursiveFindLoops(node: NodeSingular, currentPath: NodePath, level: number) {
         this.stats.maxLevelOfRecursion = Math.max(this.stats.maxLevelOfRecursion, level);
         this.stats.longestPath = Math.max(this.stats.longestPath, currentPath.size);
         this.stats.nrOfSearchIterations++;
@@ -60,7 +36,7 @@ export class LoopFinderNaive extends LoopFinderBase<StatisticsNaive> {
 
         const outgoers = node.outgoers('node');
         outgoers.forEach(n => {
-            this.recursiveFindLoops(n, currentPath, existingPaths, level + 1);
+            this.recursiveFindLoops(n, currentPath, level + 1);
 
         });
 

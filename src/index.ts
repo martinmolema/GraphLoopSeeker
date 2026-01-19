@@ -4,21 +4,24 @@
  * literature: https://www.cs.tufts.edu/comp/150GA/homeworks/hw1/Johnson%2075.PDF
  */
 
-import cytoscape, {EdgeDefinition, NodeDefinition, NodeSingular,} from 'cytoscape';
-import {set3, SetOfNodesAndEdges} from "./sets";
+import cytoscape, {EdgeDefinition, NodeDefinition} from 'cytoscape';
 import {setStyling} from "./styling";
 //@ts-ignore
 import elk from 'cytoscape-elk';
 import {NodePath, SetOfLoops} from "./algo/LoopFinderBase";
-import {Statistics} from "./statistics";
+import {Statistics} from "./stats/statistics";
 import {AlgorithmFactory} from "./algo/AlgorithmFactory";
+import {GraphExampleSet5} from "./sets/graphExampleSet5";
+import {SetOfNodesAndEdges} from "./sets/createNodesAndEdges";
+import {GraphExampleSet6} from "./sets/graphExampleSet6";
+import {GraphExampleSet1} from "./sets/graphExampleSet1";
 
 cytoscape.use(elk);
 
-var cy!: cytoscape.Core;
+let cy!: cytoscape.Core;
 
 /** HTMLDivElement */
-var elCytoscape;
+let elCytoscape;
 
 function setup(set: SetOfNodesAndEdges): void {
     elCytoscape = document.getElementById("graph");
@@ -35,7 +38,7 @@ function setup(set: SetOfNodesAndEdges): void {
     cy.layout({
         name: 'elk',
         elk: {
-            algorithm:'mrtree',
+            algorithm: 'mrtree',
             'elk.direction': 'DOWN'
         }
     } as any).run();
@@ -75,13 +78,18 @@ function createEdges(set: SetOfNodesAndEdges): EdgeDefinition[] {
 /**
  * Updates the values in the HTML-file from the stats global var
  */
-function updateStats(stats: Statistics) {
-    const items = document.querySelectorAll('table tr td:nth-child(2)');
+function updateStats(stats: Statistics, column: number) {
+    const items = document.querySelectorAll('table tr td');
     items.forEach(item => {
         const textContent = item.textContent;
-        item.textContent = textContent.replace(/\$([a-zA-Z_0-9]+)/g, (match: string, p1: string): string => {
+        const regex = new RegExp(`\\$([a-zA-Z_0-9]+):(${column})`, 'g');
+        item.textContent = textContent.replace(regex, (match: string, p1: string): string => {
             const statKey = p1 as keyof Statistics;
-            return String(stats[statKey]);
+            let value = stats[statKey];
+            if (typeof value === 'number') {
+                value = value.toLocaleString();
+            }
+            return String(value);
         });
     });
 }
@@ -133,14 +141,18 @@ function setupEventhandlers(allLoopsFound: SetOfLoops): void {
  */
 
 window.onload = () => {
-    setup(set3);
+    setup(GraphExampleSet1);
+    const algo1 = AlgorithmFactory.create("naive", cy);
+    const algo2 = AlgorithmFactory.create("martin", cy);
+    if (algo1) {
+        algo1.run();
 
-    const algo = AlgorithmFactory.create("naive", cy);
-    if (algo) {
-        algo.run();
-
-        setupEventhandlers(algo.allLoops);
-        updateStats(algo.stats);
-        showLoops(algo.allLoops);
+        setupEventhandlers(algo1.allLoops);
+        showLoops(algo1.allLoops);
+        updateStats(algo1.stats, 1);
+    }
+    if (algo2) {
+        algo2.run();
+        updateStats(algo2.stats, 2);
     }
 }

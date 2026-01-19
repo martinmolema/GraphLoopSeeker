@@ -17,6 +17,7 @@ export class Statistics  {
     maxInDegree: number = 0;
     minOutDegree: number = 0;
     maxOutDegree: number = 0;
+    algoName: string = '';
 
 
     constructor(cy: cytoscape.Core) {

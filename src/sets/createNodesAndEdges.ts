@@ -1,4 +1,6 @@
-import {SetComponentEdgeType, SetComponentNodeType, SetOfNodesAndEdges} from "./sets";
+export type SetComponentNodeType = { label: string, id: string }
+export type SetComponentEdgeType = { source: string, target: string, id: string }
+export type SetOfNodesAndEdges = { nodes: Array<SetComponentNodeType>, edges: Array<SetComponentEdgeType> }
 
 export function createNodesAndEdges(paths: string[]): SetOfNodesAndEdges {
     const edges: Array<SetComponentEdgeType> = new Array<SetComponentEdgeType>();

@@ -16,12 +16,31 @@ section.graph-and-list {
     height: calc(100vh - 100px);
 
     & div.stats {
-        border:1px solid darkgray;
-        margin-left:5px;
-        padding:5px;
+        border: 1px solid darkgray;
+        margin-left: 5px;
+        padding: 5px;
 
-        & table tr td {
-            white-space: nowrap;
+        & table {
+            border-collapse: collapse;
+
+            & tr:nth-of-type(odd) td {
+                background-color: lightgray
+            }
+
+            tr td {
+
+                border: 1px solid darkgray;
+                white-space: nowrap;
+
+
+                &.bold {
+                    font-weight: bold;
+                }
+
+                &.numeric {
+                    text-align: right;
+                }
+            }
         }
     }
 

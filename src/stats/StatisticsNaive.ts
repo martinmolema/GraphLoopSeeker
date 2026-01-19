@@ -1,4 +1,4 @@
-import {Statistics} from "../statistics";
+import {Statistics} from "./statistics";
 import cytoscape from "cytoscape";
 
 export class StatisticsNaive extends Statistics {
