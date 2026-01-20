@@ -6,7 +6,7 @@ export type SetOfLoops = Map<string, NodePath>;
 
 
 export class LoopFinderBase<T extends Statistics> {
-    private cy: cytoscape.Core;
+    protected cy: cytoscape.Core;
     protected nodesAsCollection: Collection<NodeSingular>;
     protected edgesAsCollection: Collection<EdgeSingular>;
 
