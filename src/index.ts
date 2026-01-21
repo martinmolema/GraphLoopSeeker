@@ -15,6 +15,9 @@ import {GraphExampleSet5} from "./sets/graphExampleSet5";
 import {SetOfNodesAndEdges} from "./sets/createNodesAndEdges";
 import {GraphExampleSet6} from "./sets/graphExampleSet6";
 import {GraphExampleSet1} from "./sets/graphExampleSet1";
+import {GraphExampleSet3} from "./sets/graphExampleSet3";
+import {GraphExampleSet4} from "./sets/graphExampleSet4";
+import {GraphExampleSet2} from "./sets/graphExampleSet2";
 
 cytoscape.use(elk);
 
@@ -141,18 +144,18 @@ function setupEventhandlers(allLoopsFound: SetOfLoops): void {
  */
 
 window.onload = () => {
-    setup(GraphExampleSet1);
+    setup(GraphExampleSet3);
     const algo1 = AlgorithmFactory.create("naive", cy);
-    const algo2 = AlgorithmFactory.create("martin", cy);
+    const algo2 = AlgorithmFactory.create("johnson", cy);
     if (algo1) {
         algo1.run();
 
         setupEventhandlers(algo1.allLoops);
-        showLoops(algo1.allLoops);
         updateStats(algo1.stats, 1);
     }
     if (algo2) {
         algo2.run();
+        showLoops(algo2.allLoops);
         updateStats(algo2.stats, 2);
     }
 }

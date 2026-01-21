@@ -1,6 +1,6 @@
 import {createNodesAndEdges} from "./createNodesAndEdges";
 
-const nrOfRepeatingNodesForTarjanWorstCase = 10;
+const nrOfRepeatingNodesForTarjanWorstCase = 50;
 /** Tarjan worst case */
 export const GraphExampleSet3 = createNodesAndEdges([
     'E-A',
